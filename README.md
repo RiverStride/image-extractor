@@ -6,7 +6,7 @@ A simple image extractor that crawls websites for their delicious images.
 
 `git clone https://github.com/RiverStride/image-extractor.git ~/image-extractor`
 
-## Running
+## Operation
 
 ```
 cd ~/image-extractor
