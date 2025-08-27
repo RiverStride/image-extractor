@@ -4,7 +4,10 @@ A simple image extractor that crawls websites for their delicious images.
 
 ## Installation
 
-```git clone https://github.com/RiverStride/image-extractor.git ~/image-extractor```
+```
+pip install argparse selenium
+git clone https://github.com/RiverStride/image-extractor.git ~/image-extractor
+```
 
 ## Operation
 
