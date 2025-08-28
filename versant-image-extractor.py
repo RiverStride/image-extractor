@@ -12,7 +12,7 @@ import urllib.request
 # First we need to find the links to all the webpages within the same domain as the home URL
 def versant_get_nav_urls(driver, settings):
     # So we don't return an unititialized variable
-    url_list = []
+    url_list = [f"{settings['root']}"]
 
     # We need to know which pages to search for images
     nav_items = driver.find_elements(By.CSS_SELECTOR, settings["targetnav"] + " " + settings["targetelem"])
