@@ -130,7 +130,7 @@ def versant_download_image_list(image_urls, settings):
         print(f"Downloading image no. {image_name_counter} ...")
         sanitized_root = versant_sanitize_url(settings['root'])
 
-        file_name = f"./images/{sanitized_root}/{image_url['name']}"
+        file_name = f"{settings['imagesfolder']}/{sanitized_root}/{image_url['name']}"
         urllib.request.urlretrieve(image_url['url'], file_name)
 
         print(f"{image_url['name']} downloaded successfully to {file_name}")
