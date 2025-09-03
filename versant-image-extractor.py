@@ -109,11 +109,14 @@ def get_site_favicons(driver, settings):
         favicon_url = favicon.get_attribute('href')
         favicon_name = favicon_url.split("/")[-1]
         favicon_name = favicon_name.split("?")[0]
-        favicon_number = int(re.findall(r'\d+', favicon_url)[-1])
+        favicon_number = re.findall(r'\d+', favicon_url)
         
-        print("favison size: " + str(favicon_number))
+        if len(favicon_number) == 0:
+            favicon_number = re.findall(r'\d+', favicon.get_attribute('sizes'))
         
-        favicon_size = favicon_number * favicon_number
+        print("favison size: " + str(favicon_number[-1]))
+        
+        favicon_size = int(favicon_number[-1]) * int(favicon_number[-1])
 
         if favicon_number == 0:
             favicon_size = 16 * 16
