@@ -151,7 +151,7 @@ def main():
                         help="The CSS target to find the images we want to download. Works with any element that contains an src or srcset attribute (default: img)")
     parser.add_argument('-d', '--debug', action='store_true',
                         help="Enable debug more and more verbose output (default: False)")
-    parser.add_argument('-s', '--save', type=str, default='./images'
+    parser.add_argument('--save', '-s', type=str, default='./images',
                         help="Set location to save images to, Images will be saved in a folder based off the root url")
 
     args = parser.parse_args()
