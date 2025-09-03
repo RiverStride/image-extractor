@@ -10,7 +10,7 @@ from selenium.common.exceptions import StaleElementReferenceException
 import urllib.request
 
 # First we need to find the links to all the webpages within the same domain as the home URL
-def versant_get_nav_urls(driver, settings):
+def get_nav_urls(driver, settings):
     # So we don't return an unititialized variable
     url_list = [f"{settings['root']}"]
 
@@ -37,7 +37,7 @@ def versant_get_nav_urls(driver, settings):
     return url_list
 # Then save those links for us to crawl through each one.
 
-def versant_get_page_images(nav_urls, driver, settings):
+def get_page_images(nav_urls, driver, settings):
 # For each page that we open we need to find all images on that page
     image_urls = {}
     for url in nav_urls:
@@ -88,18 +88,46 @@ def versant_get_page_images(nav_urls, driver, settings):
             except StaleElementReferenceException as e:
                 continue
 
+    # This should only run once and allows us to piggyback off off the last opened page.
+    image_urls.update(get_site_favicons(driver, settings))
+
     if settings['debug']:
         for image in image_urls:
             print(image)
 
     return image_urls
 
-def versant_sanitize_url(url):
+def get_site_favicons(driver, settings):
+    # Search through the head for favicons
+    favicon_urls = {}
+    favicon_rels = ['apple-touch-icon', 'icon']
+    
+    # Search for apple icons
+    for favicon_rel in favicon_rels:
+        favicon = driver.find_element(By.CSS_SELECTOR, f"[rel='{favicon_rel}']")
+
+        favicon_url = favicon.get_attribute('href')
+        favicon_name = favicon_url.split("/")[-1]
+        favicon_name = favicon_name.split("?")[0]
+        favicon_number = int(re.findall(r'\d+', favicon_url)[-1])
+        
+        print("favison size: " + str(favicon_number))
+        
+        favicon_size = favicon_number * favicon_number
+
+        if favicon_number == 0:
+            favicon_size = 16 * 16
+
+        favicon_urls.update({favicon_name: {"url": favicon_url, "size": favicon_size, "name": favicon_name}})
+
+    return favicon_urls
+
+def sanitize_url(url):
     return re.sub(r'[^a-zA-Z0-9_.-]', '_', url)
 
 # Save image URLs in CSV
-def versant_save_image_url_list(image_urls, settings):
-    sanitized_root = versant_sanitize_url(settings['root'])
+def save_image_url_list(image_urls, settings):
+    sanitized_root = sanitize_url(settings['root'])
 
     # We'll want to make sure we have a unique directory to save into
     folder = f"{settings['imagesfolder']}/{sanitized_root}"
@@ -112,9 +140,9 @@ def versant_save_image_url_list(image_urls, settings):
         writer.writerows(image_urls.values())
 
 # If we've already crawled the website, we'll just use the CSV instead
-def versant_retrieve_image_url_list(settings):
+def retrieve_image_url_list(settings):
     image_urls = {}
-    sanitized_root = versant_sanitize_url(settings['root'])
+    sanitized_root = sanitize_url(settings['root'])
     with open(f"{settings['imagesfolder']}/{sanitized_root}/{sanitized_root}.csv", 'r', encoding='utf-8') as csv_file:
         csv_reader = csv.DictReader(csv_file)
         for row in csv_reader:
@@ -123,12 +151,12 @@ def versant_retrieve_image_url_list(settings):
     return image_urls
 
 # Then we crawl through the list of images and download each one.
-def versant_download_image_list(image_urls, settings):
+def download_image_list(image_urls, settings):
     image_name_counter = 1
 
     for image_url in image_urls.values():
         print(f"Downloading image no. {image_name_counter} ...")
-        sanitized_root = versant_sanitize_url(settings['root'])
+        sanitized_root = sanitize_url(settings['root'])
 
         file_name = f"{settings['imagesfolder']}/{sanitized_root}/{image_url['name']}"
         urllib.request.urlretrieve(image_url['url'], file_name)
@@ -181,15 +209,16 @@ def main():
     url = settings["root"]
     driver.get(url)
 
-    nav_urls = versant_get_nav_urls(driver, settings)
-    image_urls = versant_get_page_images(nav_urls, driver, settings)
-    print(len(nav_urls))
-    print(len(image_urls))
+    nav_urls = get_nav_urls(driver, settings)
+    image_urls = get_page_images(nav_urls, driver, settings)
+    
+    print("Number of pages scanned: " + str(len(nav_urls)))
+    print("Number of images found: " + str(len(image_urls)))
 
     driver.quit()
 
-    versant_save_image_url_list(image_urls, settings)
-    versant_download_image_list(image_urls, settings)
+    save_image_url_list(image_urls, settings)
+    download_image_list(image_urls, settings)
     
 if __name__ == "__main__":
     main()
