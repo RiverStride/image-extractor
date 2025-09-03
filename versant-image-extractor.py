@@ -14,7 +14,7 @@ def versant_get_nav_urls(driver, settings):
     # So we don't return an unititialized variable
     url_list = [f"{settings['root']}"]
 
-    # We need to know which pages to search for images
+    # We need to know which pages to search for{settings[imagesfolder]}
     nav_items = driver.find_elements(By.CSS_SELECTOR, settings["targetnav"] + " " + settings["targetelem"])
 
     for item in nav_items:
@@ -37,14 +37,14 @@ def versant_get_nav_urls(driver, settings):
     return url_list
 # Then save those links for us to crawl through each one.
 
-def versant_get_page_images(nav_urls, driver, settings):
-# For each page that we open we need to find all images on that page
+def versant_get_page{settings[imagesfolder]}(nav_urls, driver, settings):
+# For each page that we open we need to find all{settings[imagesfolder]} on that page
     image_urls = {}
     for url in nav_urls:
         driver.get(url)
-        page_images = driver.find_elements(By.CSS_SELECTOR, settings["targetimage"])
+        page{settings[imagesfolder]} = driver.find_elements(By.CSS_SELECTOR, settings["targetimage"])
 
-        for page_image in page_images:
+        for page_image in page{settings[imagesfolder]}:
             try:
                 image_url = page_image.get_attribute("src")
 
@@ -60,7 +60,7 @@ def versant_get_page_images(nav_urls, driver, settings):
                 if image_url is None:
                     continue # Sometimes there isn't a url
 
-                # We don't want any duplicate images, so we'll save a dictionary of images in an array along with their filesize and url
+                # We don't want any duplicate{settings[imagesfolder]}, so we'll save a dictionary of{settings[imagesfolder]} in an array along with their filesize and url
                 image_url_split = image_url.split("/") # get url from slash
                 if image_url_split[-1].startswith("?"):
                     image_url_split = image_url.split("%2F") # if that's empty get it from url attribute
@@ -68,7 +68,7 @@ def versant_get_page_images(nav_urls, driver, settings):
                 image_name = image_url_split[-1].split("?")[0] # get the last item and then remove any remaining query
 
                 image_size = page_image.size['width'] * page_image.size['height']
-                # Sometimes images are in slideshows and their size will be 0
+                # Sometimes{settings[imagesfolder]} are in slideshows and their size will be 0
                 # We'll set a default size that's larger than the default thumbnails for these
                 if image_size == 0: 
                     image_size = 90 * 90 # want this to be larger than most thumbnails
@@ -102,11 +102,11 @@ def versant_save_image_url_list(image_urls, settings):
     sanitized_root = versant_sanitize_url(settings['root'])
 
     # We'll want to make sure we have a unique directory to save into
-    folder = f"./images/{sanitized_root}"
+    folder = f"{settings[imagesfolder]}/{sanitized_root}"
     if not os.path.exists(folder):
         os.makedirs(folder)
 
-    with open(f"./images/{sanitized_root}/{sanitized_root}.csv", 'w', newline='') as csv_file:
+    with open(f"{settings[imagesfolder]}/{sanitized_root}/{sanitized_root}.csv", 'w', newline='') as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=['url', 'size', 'name'])
         writer.writeheader()
         writer.writerows(image_urls.values())
@@ -115,14 +115,14 @@ def versant_save_image_url_list(image_urls, settings):
 def versant_retrieve_image_url_list(settings):
     image_urls = {}
     sanitized_root = versant_sanitize_url(settings['root'])
-    with open(f"./images/{sanitized_root}/{sanitized_root}.csv", 'r', encoding='utf-8') as csv_file:
+    with open(f"{settings[imagesfolder]}/{sanitized_root}/{sanitized_root}.csv", 'r', encoding='utf-8') as csv_file:
         csv_reader = csv.DictReader(csv_file)
         for row in csv_reader:
             image_urls.update({row[name]: {row}})
 
     return image_urls
 
-# Then we crawl through the list of images and download each one.
+# Then we crawl through the list of{settings[imagesfolder]} and download each one.
 def versant_download_image_list(image_urls, settings):
     image_name_counter = 1
 
@@ -130,7 +130,7 @@ def versant_download_image_list(image_urls, settings):
         print(f"Downloading image no. {image_name_counter} ...")
         sanitized_root = versant_sanitize_url(settings['root'])
 
-        file_name = f"./images/{sanitized_root}/{image_url['name']}"
+        file_name = f".{settings[imagesfolder]}/{sanitized_root}/{image_url['name']}"
         urllib.request.urlretrieve(image_url['url'], file_name)
 
         print(f"{image_url['name']} downloaded successfully to {file_name}")
@@ -139,7 +139,7 @@ def versant_download_image_list(image_urls, settings):
 
 def main(): 
     parser = argparse.ArgumentParser(
-        description = 'A script to extract images from pages found in the navigation for a specific website')
+        description = 'A script to extract{settings[imagesfolder]} from pages found in the navigation for a specific website')
     
     parser.add_argument('--url', type=str, default="https://vip.teeitup.com/",
                         help="The target url we will be crawling (default: https://vip.teeitup.com/)")
@@ -148,9 +148,11 @@ def main():
     parser.add_argument('--nav_item', type=str, default='a',
                         help="The CSS target for the links within the navigation (default: a)")
     parser.add_argument('--img_target', type=str, default='img',
-                        help="The CSS target to find the images we want to download. Works with any element that contains an src or srcset attribute (default: img)")
+                        help="The CSS target to find the{settings[imagesfolder]} we want to download. Works with any element that contains an src or srcset attribute (default: img)")
     parser.add_argument('-d', '--debug', action='store_true',
                         help="Enable debug more and more verbose output (default: False)")
+    parser.add_argument('-s', '--save', type=str, default='.{settings[imagesfolder]}'
+                        help="Set location to save{settings[imagesfolder]} to,{settings[imagesfolder]} will be saved in a folder based off the root url")
 
     args = parser.parse_args()
     # to run Chrome in headless mode
@@ -169,6 +171,7 @@ def main():
     # internal program settings
     settings = {
         "root": args.url,
+        {settings[imagesfolder]}folder": args.save,
         "targetnav": args.nav_selector,
         "targetelem": args.nav_item,
         "targetimage": args.img_target,
@@ -179,7 +182,7 @@ def main():
     driver.get(url)
 
     nav_urls = versant_get_nav_urls(driver, settings)
-    image_urls = versant_get_page_images(nav_urls, driver, settings)
+    image_urls = versant_get_page{settings[imagesfolder]}(nav_urls, driver, settings)
     print(len(nav_urls))
     print(len(image_urls))
 
