@@ -30,10 +30,9 @@ def get_nav_urls(driver, settings):
     url_set = set(url_list)
     url_list = list(url_set)
 
-    if settings['debug']:
-        for url in url_list:
-            print(url)
-    
+    for url in url_list:
+        debug_message(url, settings['debug'])
+   
     return url_list
 # Then save those links for us to crawl through each one.
 
@@ -52,8 +51,7 @@ def get_page_images(nav_urls, driver, settings):
                 # so if there is a larger image, we'll need to grab that instead
                 srcset = page_image.get_attribute("srcset")
                 if srcset != "":
-                    if settings['debug']:
-                        print("has srcset")
+                    debug_message("has srcset", settings['debug'])
                     srcset_largest = srcset.split(", ")[-1] # get the last image assuming it's the largest
                     image_url = srcset_largest.split(" ")[0] # we don't need the pixel width included
                 
@@ -72,15 +70,13 @@ def get_page_images(nav_urls, driver, settings):
                 # We'll set a default size that's larger than the default thumbnails for these
                 if image_size == 0: 
                     image_size = 90 * 90 # want this to be larger than most thumbnails
-                if settings['debug']:
-                    print(page_image.size)
-                    print(f"{image_name}:{image_size}")
+                debug_message(page_image.size, settings['debug'])
+                debug_message(f"{image_name}:{image_size}", settings['debug'])
 
                 # If the image url exists and the new one is smaller than what we already have
                 # We don't need to update the image_urls dictionary listing
                 if image_name in image_urls and image_urls[image_name]["size"] >= image_size:
-                    if settings['debug']:
-                        print(f"{image_name} replaced with larger image")
+                    debug_message(f"{image_name} replaced with larger image", settings['debug'])
                     continue
 
                 # If an image is larger than a previously found image, we'll replace the URL with that one
@@ -91,9 +87,8 @@ def get_page_images(nav_urls, driver, settings):
     # This should only run once and allows us to piggyback off off the last opened page.
     image_urls.update(get_site_favicons(driver, settings))
 
-    if settings['debug']:
-        for image in image_urls:
-            print(image)
+    for image in image_urls:
+        debug_message(image, settings['debug'])
 
     return image_urls
 
@@ -104,19 +99,24 @@ def get_site_favicons(driver, settings):
     
     # Search for apple icons
     for favicon_rel in favicon_rels:
-        favicon = driver.find_element(By.CSS_SELECTOR, f"[rel='{favicon_rel}']")
+        favicon = driver.find_element(By.CSS_SELECTOR, f"[rel*='{favicon_rel}']")
 
         favicon_url = favicon.get_attribute('href')
         favicon_name = favicon_url.split("/")[-1]
         favicon_name = favicon_name.split("?")[0]
-        favicon_number = re.findall(r'\d+', favicon_url)
+
+        try:
+            favicon_number = re.findall(r'\d+', favicon_url)
         
-        if len(favicon_number) == 0:
-            favicon_number = re.findall(r'\d+', favicon.get_attribute('sizes'))
+            if len(favicon_number) == 0:
+                favicon_number = re.findall(r'\d+', favicon.get_attribute('sizes'))
+            
+            print("favicon size: " + str(favicon_number[-1]))
         
-        print("favison size: " + str(favicon_number[-1]))
-        
-        favicon_size = int(favicon_number[-1]) * int(favicon_number[-1])
+            favicon_size = int(favicon_number[-1]) * int(favicon_number[-1])
+        except Exception as e:
+            print("No favicon size found, defaulting to 16x16")
+            favicon_number = 0
 
         if favicon_number == 0:
             favicon_size = 16 * 16
@@ -167,6 +167,10 @@ def download_image_list(image_urls, settings):
         print(f"{image_url['name']} downloaded successfully to {file_name}")
 
         image_name_counter += 1
+
+def debug_message(text, debug = False):
+    if debug:
+        print(text)
 
 def main(): 
     parser = argparse.ArgumentParser(
